@@ -1,0 +1,53 @@
+<mat-sidenav-container class="app-container">
+  <mat-sidenav #sidenav mode="side" opened class="sidenav">
+    <div class="logo">
+      <mat-icon>account_balance</mat-icon>
+      <span>{{ title() }}</span>
+    </div>
+    <mat-nav-list>
+      @for (item of navItems; track item.path) {
+        <a mat-list-item [routerLink]="item.path" routerLinkActive="active">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="main-content">
+    <mat-toolbar color="primary" class="header">
+      <button mat-icon-button (click)="sidenav.toggle()" class="menu-btn">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="page-title">{{ title() }}</span>
+      <span class="spacer"></span>
+      
+      <!-- Currency Selector -->
+      <button mat-button [matMenuTriggerFor]="currencyMenu" class="currency-btn">
+        <span class="currency-code">{{ currencyService.selectedCurrency() }}</span>
+        <span class="currency-symbol">{{ currencyService.getCurrencySymbol() }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #currencyMenu="matMenu">
+        @for (currency of currencyService.currencies; track currency.code) {
+          <button mat-menu-item 
+            (click)="currencyService.setCurrency(currency.code)"
+            [class.selected]="currency.code === currencyService.selectedCurrency()">
+            <span class="currency-option">
+              <span class="symbol">{{ currency.symbol }}</span>
+              <span class="name">{{ currency.code }} - {{ currency.name }}</span>
+            </span>
+          </button>
+        }
+      </mat-menu>
+
+      <button mat-icon-button>
+        <mat-icon>notifications</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

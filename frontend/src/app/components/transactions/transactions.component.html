@@ -1,0 +1,182 @@
+<div class="transactions-page">
+  <div class="page-header">
+    <h1>Transactions</h1>
+    <div class="header-actions">
+      <button mat-stroked-button (click)="exportCsv()">
+        <mat-icon>download</mat-icon>
+        Export CSV
+      </button>
+      <button mat-raised-button color="primary" (click)="toggleForm()">
+        <mat-icon>{{ showForm() ? 'close' : 'add' }}</mat-icon>
+        {{ showForm() ? 'Cancel' : 'Add Transaction' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Add Transaction Form -->
+  @if (showForm()) {
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>New Transaction</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()" class="transaction-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Amount</mat-label>
+            <input matInput type="number" formControlName="amount" placeholder="0.00">
+            <span matTextPrefix>{{ currencyService.getCurrencySymbol() }}&nbsp;</span>
+            @if (transactionForm.get('amount')?.hasError('required')) {
+              <mat-error>Amount is required</mat-error>
+            }
+            @if (transactionForm.get('amount')?.hasError('min')) {
+              <mat-error>Amount must be greater than 0</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Type</mat-label>
+            <mat-select formControlName="type">
+              <mat-option value="expense">Expense</mat-option>
+              <mat-option value="income">Income</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <input matInput formControlName="description" placeholder="What was this for?">
+            @if (transactionForm.get('description')?.hasError('required')) {
+              <mat-error>Description is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category">
+              @for (cat of categories(); track cat) {
+                <mat-option [value]="cat">{{ cat }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Date</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="date">
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="toggleForm()">Cancel</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="transactionForm.invalid">
+              Add Transaction
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Filters -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters">
+        <mat-form-field appearance="outline">
+          <mat-label>Category</mat-label>
+          <mat-select [value]="filterCategory()" (selectionChange)="filterCategory.set($event.value)">
+            <mat-option value="">All Categories</mat-option>
+            @for (cat of categories(); track cat) {
+              <mat-option [value]="cat">{{ cat }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Type</mat-label>
+          <mat-select [value]="filterType()" (selectionChange)="filterType.set($event.value)">
+            <mat-option value="">All Types</mat-option>
+            <mat-option value="income">Income</mat-option>
+            <mat-option value="expense">Expense</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="applyFilter()">
+          <mat-icon>filter_list</mat-icon>
+          Apply
+        </button>
+        <button mat-button (click)="clearFilters()">Clear</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Transactions Table -->
+  <mat-card class="table-card">
+    @if (loading()) {
+      <mat-card-content class="loading">
+        <p>Loading transactions...</p>
+      </mat-card-content>
+    } @else if (transactions().length === 0) {
+      <mat-card-content class="empty-state">
+        <mat-icon>receipt_long</mat-icon>
+        <h2>No transactions yet</h2>
+        <p>Start tracking your finances by adding your first transaction</p>
+        <button mat-raised-button color="primary" (click)="toggleForm()">
+          <mat-icon>add</mat-icon>
+          Add Transaction
+        </button>
+      </mat-card-content>
+    } @else {
+      <table mat-table [dataSource]="transactions()" class="transactions-table">
+        <!-- Date Column -->
+        <ng-container matColumnDef="date">
+          <th mat-header-cell *matHeaderCellDef>Date</th>
+          <td mat-cell *matCellDef="let t">{{ t.date | date:'mediumDate' }}</td>
+        </ng-container>
+
+        <!-- Description Column -->
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef>Description</th>
+          <td mat-cell *matCellDef="let t">{{ t.description }}</td>
+        </ng-container>
+
+        <!-- Category Column -->
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Category</th>
+          <td mat-cell *matCellDef="let t">
+            <mat-chip>{{ t.category || 'Uncategorized' }}</mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Type Column -->
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let t">
+            <span class="type-badge" [class.income]="t.type === 'income'" [class.expense]="t.type === 'expense'">
+              {{ t.type }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Amount Column -->
+        <ng-container matColumnDef="amount">
+          <th mat-header-cell *matHeaderCellDef>Amount</th>
+          <td mat-cell *matCellDef="let t" [class.positive]="t.type === 'income'" [class.negative]="t.type === 'expense'">
+            {{ t.type === 'income' ? '+' : '-' }}{{ t.amount | convertCurrency }}
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let t">
+            <button mat-icon-button color="warn" (click)="deleteTransaction(t)" matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    }
+  </mat-card>
+</div>

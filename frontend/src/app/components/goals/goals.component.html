@@ -1,0 +1,196 @@
+<div class="goals-page">
+  <div class="page-header">
+    <h1>Savings Goals</h1>
+    <button mat-raised-button color="primary" (click)="toggleForm()">
+      <mat-icon>{{ showForm() ? 'close' : 'add' }}</mat-icon>
+      {{ showForm() ? 'Cancel' : 'New Goal' }}
+    </button>
+  </div>
+
+  <!-- New Goal Form -->
+  @if (showForm()) {
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Create New Goal</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="goalForm" (ngSubmit)="onSubmit()" class="goal-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Goal Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g., Emergency Fund, Vacation, New Car">
+            @if (goalForm.get('name')?.hasError('required')) {
+              <mat-error>Name is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Target Amount</mat-label>
+            <input matInput type="number" formControlName="targetAmount" placeholder="0.00">
+            <span matTextPrefix>{{ currencyService.getCurrencySymbol() }}&nbsp;</span>
+            @if (goalForm.get('targetAmount')?.hasError('required')) {
+              <mat-error>Amount is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Target Date (Optional)</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="deadline">
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="toggleForm()">Cancel</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="goalForm.invalid">
+              Create Goal
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Summary -->
+  @if (summary()) {
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <div class="summary-stats">
+          <div class="stat">
+            <mat-icon>flag</mat-icon>
+            <div class="stat-content">
+              <span class="value">{{ summary()!.totalGoals }}</span>
+              <span class="label">Active Goals</span>
+            </div>
+          </div>
+          <div class="stat">
+            <mat-icon>savings</mat-icon>
+            <div class="stat-content">
+              <span class="value">{{ summary()!.totalSaved | convertCurrency }}</span>
+              <span class="label">Total Saved</span>
+            </div>
+          </div>
+          <div class="stat">
+            <mat-icon>track_changes</mat-icon>
+            <div class="stat-content">
+              <span class="value">{{ summary()!.totalTarget | convertCurrency }}</span>
+              <span class="label">Total Target</span>
+            </div>
+          </div>
+          <div class="stat">
+            <mat-icon>trending_up</mat-icon>
+            <div class="stat-content">
+              <span class="value">{{ summary()!.overallProgress | number:'1.0-0' }}%</span>
+              <span class="label">Overall Progress</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Goals -->
+  @if (loading()) {
+    <div class="loading">
+      <p>Loading goals...</p>
+    </div>
+  } @else if (goals().length === 0) {
+    <mat-card class="empty-state">
+      <mat-card-content>
+        <mat-icon>savings</mat-icon>
+        <h2>No savings goals yet</h2>
+        <p>Set financial goals to track your progress toward the things that matter most to you</p>
+        <button mat-raised-button color="primary" (click)="toggleForm()">
+          <mat-icon>add</mat-icon>
+          Create Your First Goal
+        </button>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="goals-grid">
+      @for (goal of goals(); track goal.id) {
+        <mat-card class="goal-card" [attr.data-goal-id]="goal.id">
+          <mat-card-header>
+            <div class="goal-icon" mat-card-avatar>
+              <mat-icon>{{ getProgress(goal) >= 100 ? 'check_circle' : 'savings' }}</mat-icon>
+            </div>
+            <mat-card-title>{{ goal.name }}</mat-card-title>
+            @if (goal.deadline) {
+              <mat-card-subtitle [class]="getDeadlineStatus(goal)">
+                @if (getDaysRemaining(goal)! < 0) {
+                  Overdue by {{ -getDaysRemaining(goal)! }} days
+                } @else {
+                  {{ getDaysRemaining(goal) }} days left
+                }
+              </mat-card-subtitle>
+            }
+            <button mat-icon-button class="menu-btn" (click)="deleteGoal(goal)" matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </mat-card-header>
+
+          <mat-card-content>
+            <div class="goal-progress-ring">
+              <svg viewBox="0 0 120 120" class="progress-ring">
+                <circle cx="60" cy="60" r="54" class="progress-bg"/>
+                <circle cx="60" cy="60" r="54" class="progress-bar"
+                  [style.stroke-dasharray]="339.292"
+                  [style.stroke-dashoffset]="339.292 - (339.292 * getProgress(goal) / 100)"/>
+              </svg>
+              <div class="progress-text">
+                <span class="percentage">{{ getProgress(goal) | number:'1.0-0' }}%</span>
+              </div>
+            </div>
+
+            <div class="goal-amounts">
+              <div class="saved">
+                <span class="label">Saved</span>
+                <span class="value">{{ goal.currentAmount | convertCurrency }}</span>
+              </div>
+              <div class="target">
+                <span class="label">Target</span>
+                <span class="value">{{ goal.targetAmount | convertCurrency }}</span>
+              </div>
+            </div>
+
+            <div class="remaining-amount">
+              @if (goal.targetAmount - goal.currentAmount > 0) {
+                {{ goal.targetAmount - goal.currentAmount | convertCurrency }} to go
+              } @else {
+                🎉 Goal achieved!
+              }
+            </div>
+
+            <!-- Contribute Form -->
+            @if (contributeGoalId() === goal.id) {
+              <form [formGroup]="contributeForm" (ngSubmit)="contribute(goal.id)" class="contribute-form">
+                <div class="contribute-header">
+                  <strong>Contributing to: {{ goal.name }}</strong>
+                </div>
+                <mat-form-field appearance="outline">
+                  <mat-label>Amount</mat-label>
+                  <input matInput type="number" formControlName="amount">
+                  <span matTextPrefix>{{ currencyService.getCurrencySymbol() }}&nbsp;</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Note (optional)</mat-label>
+                  <input matInput formControlName="note">
+                </mat-form-field>
+                <div class="contribute-actions">
+                  <button mat-button type="button" (click)="hideContributeForm()">Cancel</button>
+                  <button mat-raised-button color="primary" type="submit" [disabled]="contributeForm.invalid">
+                    Add
+                  </button>
+                </div>
+              </form>
+            } @else {
+              <button mat-stroked-button color="primary" class="contribute-btn" (click)="showContributeForm(goal.id)">
+                <mat-icon>add</mat-icon>
+                Add Contribution
+              </button>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

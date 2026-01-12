@@ -1,0 +1,262 @@
+.dashboard {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #666;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.error-card {
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px;
+    
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: #d32f2f;
+      margin-bottom: 16px;
+    }
+    
+    p {
+      color: #666;
+      margin-bottom: 16px;
+    }
+  }
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px !important;
+  }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+      color: white;
+    }
+  }
+
+  .card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+}
+
+.balance-card .card-icon { background: linear-gradient(135deg, #1976d2, #42a5f5); }
+.income-card .card-icon { background: linear-gradient(135deg, #388e3c, #66bb6a); }
+.expense-card .card-icon { background: linear-gradient(135deg, #d32f2f, #ef5350); }
+.savings-card .card-icon { background: linear-gradient(135deg, #7b1fa2, #ab47bc); }
+
+.positive { color: #388e3c !important; }
+.negative { color: #d32f2f !important; }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+mat-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px 0;
+
+    mat-card-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin: 0;
+    }
+  }
+
+  mat-card-content {
+    padding: 24px;
+  }
+}
+
+.chart-card {
+  .chart-container {
+    height: 280px;
+    position: relative;
+  }
+}
+
+.transactions-card {
+  mat-list-item {
+    .income {
+      color: #388e3c;
+    }
+    
+    .expense {
+      color: #d32f2f;
+    }
+  }
+}
+
+.budgets-card {
+  .budget-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .budget-item {
+    .budget-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+
+      .category {
+        font-weight: 500;
+        color: #333;
+      }
+
+      .amount {
+        font-size: 14px;
+        color: #666;
+      }
+    }
+
+    mat-progress-bar {
+      height: 8px;
+      border-radius: 4px;
+    }
+  }
+}
+
+.insights-card {
+  .insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .insight-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .insight-warning {
+    background: #fff3e0;
+    color: #e65100;
+
+    mat-icon { color: #f57c00; }
+  }
+
+  .insight-alert {
+    background: #ffebee;
+    color: #c62828;
+
+    mat-icon { color: #d32f2f; }
+  }
+
+  .insight-tip {
+    background: #e8f5e9;
+    color: #2e7d32;
+
+    mat-icon { color: #388e3c; }
+  }
+
+  .insight-info {
+    background: #e3f2fd;
+    color: #1565c0;
+
+    mat-icon { color: #1976d2; }
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #999;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    color: #ccc;
+  }
+
+  p {
+    margin-bottom: 16px;
+  }
+}

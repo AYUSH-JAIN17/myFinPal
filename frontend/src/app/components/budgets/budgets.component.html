@@ -1,0 +1,154 @@
+<div class="budgets-page">
+  <div class="page-header">
+    <h1>Budgets</h1>
+    <button mat-raised-button color="primary" (click)="toggleForm()">
+      <mat-icon>{{ showForm() ? 'close' : 'add' }}</mat-icon>
+      {{ showForm() ? 'Cancel' : 'Create Budget' }}
+    </button>
+  </div>
+
+  <!-- Add/Edit Budget Form -->
+  @if (showForm()) {
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>{{ editingBudget() ? 'Edit Budget' : 'New Budget' }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="budgetForm" (ngSubmit)="onSubmit()" class="budget-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category" [disabled]="editingBudget() !== null">
+              @for (cat of categories; track cat) {
+                <mat-option [value]="cat">{{ cat }}</mat-option>
+              }
+            </mat-select>
+            @if (budgetForm.get('category')?.hasError('required')) {
+              <mat-error>Category is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Monthly Limit</mat-label>
+            <input matInput type="number" formControlName="limit" placeholder="0.00">
+            <span matTextPrefix>{{ currencyService.getCurrencySymbol() }}&nbsp;</span>
+            @if (budgetForm.get('limit')?.hasError('required')) {
+              <mat-error>Limit is required</mat-error>
+            }
+            @if (budgetForm.get('limit')?.hasError('min')) {
+              <mat-error>Limit must be at least 1</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Alert Threshold</mat-label>
+            <input matInput type="number" formControlName="alertThreshold" placeholder="80">
+            <span matTextSuffix>%</span>
+            <mat-hint>Get notified when spending reaches this percentage</mat-hint>
+          </mat-form-field>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="toggleForm()">Cancel</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="budgetForm.invalid">
+              {{ editingBudget() ? 'Update Budget' : 'Create Budget' }}
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Summary Card -->
+  @if (budgets().length > 0) {
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <div class="summary-stats">
+          <div class="stat">
+            <span class="label">Total Budget</span>
+            <span class="value">{{ getTotalBudget() | convertCurrency }}</span>
+          </div>
+          <div class="stat">
+            <span class="label">Total Spent</span>
+            <span class="value" [class.over]="getTotalSpent() > getTotalBudget()">{{ getTotalSpent() | convertCurrency }}</span>
+          </div>
+          <div class="stat">
+            <span class="label">Remaining</span>
+            <span class="value remaining">{{ getTotalBudget() - getTotalSpent() | convertCurrency }}</span>
+          </div>
+        </div>
+        <mat-progress-bar 
+          [mode]="'determinate'" 
+          [value]="getOverallProgress()"
+          [color]="getOverallProgress() >= 90 ? 'warn' : 'primary'">
+        </mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Budget Cards -->
+  @if (loading()) {
+    <div class="loading">
+      <p>Loading budgets...</p>
+    </div>
+  } @else if (budgets().length === 0) {
+    <mat-card class="empty-state">
+      <mat-card-content>
+        <mat-icon>account_balance_wallet</mat-icon>
+        <h2>No budgets set</h2>
+        <p>Create budgets to track your spending by category and stay on top of your finances</p>
+        <button mat-raised-button color="primary" (click)="toggleForm()">
+          <mat-icon>add</mat-icon>
+          Create Your First Budget
+        </button>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="budgets-grid">
+      @for (budget of budgets(); track budget.category) {
+        <mat-card class="budget-card" [class]="getStatusClass(budget)">
+          <mat-card-header>
+            <mat-icon mat-card-avatar [class]="getStatusClass(budget)">{{ getStatusIcon(budget) }}</mat-icon>
+            <mat-card-title>{{ budget.category }}</mat-card-title>
+            <mat-card-subtitle>Monthly Budget</mat-card-subtitle>
+            <div class="card-actions">
+              <button mat-icon-button class="edit-btn" (click)="editBudget(budget)" matTooltip="Edit budget">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button class="delete-btn" (click)="deleteBudget(budget)" matTooltip="Delete budget">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="budget-amounts">
+              <div class="spent">
+                <span class="label">Spent</span>
+                <span class="value">{{ budget.spent | convertCurrency }}</span>
+              </div>
+              <div class="limit">
+                <span class="label">of</span>
+                <span class="value">{{ budget.limit | convertCurrency }}</span>
+              </div>
+            </div>
+
+            <mat-progress-bar 
+              [mode]="'determinate'" 
+              [value]="getProgress(budget)"
+              [color]="getProgressColor(budget)">
+            </mat-progress-bar>
+
+            <div class="budget-footer">
+              <span class="remaining" [class.over]="getRemaining(budget) === 0">
+                @if (getRemaining(budget) > 0) {
+                  {{ getRemaining(budget) | convertCurrency }} remaining
+                } @else {
+                  Budget exceeded!
+                }
+              </span>
+              <span class="percentage">{{ getProgress(budget) | number:'1.0-0' }}%</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

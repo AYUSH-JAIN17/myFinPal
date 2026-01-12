@@ -1,0 +1,184 @@
+<div class="dashboard">
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-icon>hourglass_empty</mat-icon>
+      <p>Loading dashboard...</p>
+    </div>
+  } @else if (error()) {
+    <mat-card class="error-card">
+      <mat-card-content>
+        <mat-icon>error</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-raised-button color="primary" (click)="loadDashboard()">Retry</button>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <mat-card class="summary-card balance-card">
+        <mat-card-content>
+          <div class="card-icon">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <div class="card-info">
+            <span class="label">Current Balance</span>
+            <span class="value">{{ balance() | convertCurrency }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card income-card">
+        <mat-card-content>
+          <div class="card-icon">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="card-info">
+            <span class="label">Monthly Income</span>
+            <span class="value positive">{{ monthlyIncome() | convertCurrency }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card expense-card">
+        <mat-card-content>
+          <div class="card-icon">
+            <mat-icon>trending_down</mat-icon>
+          </div>
+          <div class="card-info">
+            <span class="label">Monthly Expenses</span>
+            <span class="value negative">{{ monthlyExpenses() | convertCurrency }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card savings-card">
+        <mat-card-content>
+          <div class="card-icon">
+            <mat-icon>savings</mat-icon>
+          </div>
+          <div class="card-info">
+            <span class="label">Net Savings</span>
+            <span class="value" [class.positive]="monthlyIncome() - monthlyExpenses() >= 0" [class.negative]="monthlyIncome() - monthlyExpenses() < 0">
+              {{ monthlyIncome() - monthlyExpenses() | convertCurrency }}
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-grid">
+      <!-- Spending Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Spending by Category</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (spendingChartData().labels && spendingChartData().labels!.length > 0) {
+            <div class="chart-container">
+              <canvas baseChart
+                [data]="spendingChartData()"
+                [options]="spendingChartOptions"
+                type="doughnut">
+              </canvas>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>pie_chart</mat-icon>
+              <p>No spending data yet</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Recent Transactions -->
+      <mat-card class="transactions-card">
+        <mat-card-header>
+          <mat-card-title>Recent Transactions</mat-card-title>
+          <button mat-button color="primary" routerLink="/transactions">View All</button>
+        </mat-card-header>
+        <mat-card-content>
+          @if (recentTransactions().length > 0) {
+            <mat-list>
+              @for (transaction of recentTransactions().slice(0, 5); track transaction.id) {
+                <mat-list-item>
+                  <mat-icon matListItemIcon [class.income]="transaction.type === 'income'" [class.expense]="transaction.type === 'expense'">
+                    {{ transaction.type === 'income' ? 'arrow_upward' : 'arrow_downward' }}
+                  </mat-icon>
+                  <span matListItemTitle>{{ transaction.description }}</span>
+                  <span matListItemLine>{{ transaction.category }} • {{ transaction.date | date:'shortDate' }}</span>
+                  <span matListItemMeta [class.positive]="transaction.type === 'income'" [class.negative]="transaction.type === 'expense'">
+                    {{ transaction.type === 'income' ? '+' : '-' }}{{ transaction.amount | convertCurrency }}
+                  </span>
+                </mat-list-item>
+              }
+            </mat-list>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>receipt_long</mat-icon>
+              <p>No transactions yet</p>
+              <button mat-raised-button color="primary" routerLink="/transactions">Add Transaction</button>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Budget Overview -->
+      <mat-card class="budgets-card">
+        <mat-card-header>
+          <mat-card-title>Budget Overview</mat-card-title>
+          <button mat-button color="primary" routerLink="/budgets">Manage</button>
+        </mat-card-header>
+        <mat-card-content>
+          @if (budgets().length > 0) {
+            <div class="budget-list">
+              @for (budget of budgets().slice(0, 4); track budget.category) {
+                <div class="budget-item">
+                  <div class="budget-header">
+                    <span class="category">{{ budget.category }}</span>
+                    <span class="amount">{{ budget.spent | convertCurrency }} / {{ budget.limit | convertCurrency }}</span>
+                  </div>
+                  <mat-progress-bar 
+                    [mode]="'determinate'" 
+                    [value]="getBudgetProgress(budget)"
+                    [color]="getBudgetColor(budget)">
+                  </mat-progress-bar>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>account_balance_wallet</mat-icon>
+              <p>No budgets set</p>
+              <button mat-raised-button color="primary" routerLink="/budgets">Create Budget</button>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Insights -->
+      <mat-card class="insights-card">
+        <mat-card-header>
+          <mat-card-title>Smart Insights</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (insights().length > 0) {
+            <div class="insights-list">
+              @for (insight of insights().slice(0, 4); track $index) {
+                <div class="insight-item" [class]="getInsightClass(insight.type)">
+                  <mat-icon>{{ getInsightIcon(insight.type) }}</mat-icon>
+                  <span>{{ currencyService.formatInsightMessage(insight.message, insight.amounts) }}</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>lightbulb</mat-icon>
+              <p>Add more transactions to get personalized insights</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

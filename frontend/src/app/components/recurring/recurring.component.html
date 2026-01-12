@@ -1,0 +1,184 @@
+<div class="recurring-page">
+  <div class="page-header">
+    <h1>Recurring Transactions</h1>
+    <div class="header-actions">
+      <button mat-stroked-button (click)="processAll()">
+        <mat-icon>sync</mat-icon>
+        Process Due
+      </button>
+      <button mat-raised-button color="primary" (click)="toggleForm()">
+        <mat-icon>{{ showForm() ? 'close' : 'add' }}</mat-icon>
+        {{ showForm() ? 'Cancel' : 'Add Recurring' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Add Form -->
+  @if (showForm()) {
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>New Recurring Transaction</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="recurringForm" (ngSubmit)="onSubmit()" class="recurring-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <input matInput formControlName="description" placeholder="e.g., Netflix, Rent, Salary">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Amount</mat-label>
+            <input matInput type="number" formControlName="amount">
+            <span matTextPrefix>{{ currencyService.getCurrencySymbol() }}&nbsp;</span>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Type</mat-label>
+            <mat-select formControlName="type">
+              <mat-option value="expense">Expense</mat-option>
+              <mat-option value="income">Income</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category">
+              @for (cat of categories; track cat) {
+                <mat-option [value]="cat">{{ cat }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Frequency</mat-label>
+            <mat-select formControlName="frequency">
+              @for (freq of frequencies; track freq.value) {
+                <mat-option [value]="freq.value">{{ freq.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="toggleForm()">Cancel</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="recurringForm.invalid">
+              Create
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Summary -->
+  @if (recurring().length > 0) {
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <div class="summary-stats">
+          <div class="stat income">
+            <mat-icon>trending_up</mat-icon>
+            <div>
+              <span class="value">{{ getMonthlyTotal().income | convertCurrency }}</span>
+              <span class="label">Monthly Income</span>
+            </div>
+          </div>
+          <div class="stat expense">
+            <mat-icon>trending_down</mat-icon>
+            <div>
+              <span class="value">{{ getMonthlyTotal().expense | convertCurrency }}</span>
+              <span class="label">Monthly Expenses</span>
+            </div>
+          </div>
+          <div class="stat net" [class.positive]="getMonthlyTotal().income - getMonthlyTotal().expense >= 0">
+            <mat-icon>account_balance</mat-icon>
+            <div>
+              <span class="value">{{ getMonthlyTotal().income - getMonthlyTotal().expense | convertCurrency }}</span>
+              <span class="label">Net Monthly</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Upcoming -->
+  @if (upcoming().length > 0) {
+    <mat-card class="upcoming-card">
+      <mat-card-header>
+        <mat-card-title>Upcoming This Week</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="upcoming-list">
+          @for (item of upcoming(); track item.id) {
+            <div class="upcoming-item">
+              <mat-icon [class]="item.type">{{ item.type === 'income' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+              <div class="info">
+                <span class="description">{{ item.description }}</span>
+                <span class="date">{{ item.nextDate | date:'mediumDate' }}</span>
+              </div>
+              <span class="amount" [class]="item.type">
+                {{ item.type === 'income' ? '+' : '-' }}{{ item.amount | convertCurrency }}
+              </span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Recurring List -->
+  @if (loading()) {
+    <div class="loading"><p>Loading...</p></div>
+  } @else if (recurring().length === 0) {
+    <mat-card class="empty-state">
+      <mat-card-content>
+        <mat-icon>autorenew</mat-icon>
+        <h2>No recurring transactions</h2>
+        <p>Set up recurring income and expenses to automatically track regular payments</p>
+        <button mat-raised-button color="primary" (click)="toggleForm()">
+          <mat-icon>add</mat-icon>
+          Add Recurring
+        </button>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="recurring-grid">
+      @for (item of recurring(); track item.id) {
+        <mat-card class="recurring-card" [class.inactive]="!item.active">
+          <mat-card-header>
+            <mat-icon mat-card-avatar [class]="item.type">
+              {{ item.type === 'income' ? 'arrow_upward' : 'arrow_downward' }}
+            </mat-icon>
+            <mat-card-title>{{ item.description }}</mat-card-title>
+            <mat-card-subtitle>
+              <mat-chip>{{ getFrequencyLabel(item.frequency) }}</mat-chip>
+              @if (item.category) {
+                <mat-chip>{{ item.category }}</mat-chip>
+              }
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="amount-display" [class]="item.type">
+              {{ item.type === 'income' ? '+' : '-' }}{{ item.amount | convertCurrency }}
+            </div>
+            @if (item.nextDue) {
+              <div class="next-due">
+                Next: {{ item.nextDue | date:'mediumDate' }}
+              </div>
+            }
+          </mat-card-content>
+          <mat-card-actions>
+            <mat-slide-toggle 
+              [checked]="item.active" 
+              (change)="toggleActive(item)"
+              color="primary">
+              {{ item.active ? 'Active' : 'Paused' }}
+            </mat-slide-toggle>
+            <button mat-icon-button color="warn" (click)="deleteRecurring(item)" matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

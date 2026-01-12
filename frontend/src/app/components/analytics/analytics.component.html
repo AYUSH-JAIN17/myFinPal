@@ -1,0 +1,181 @@
+<div class="analytics-page">
+  <div class="page-header">
+    <h1>Analytics & Insights</h1>
+    <div class="header-actions">
+      <button mat-stroked-button (click)="exportMonthlyReport()">
+        <mat-icon>download</mat-icon>
+        Monthly Report
+      </button>
+      <button mat-stroked-button (click)="exportTaxReport()">
+        <mat-icon>receipt</mat-icon>
+        Tax Report
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading"><p>Loading analytics...</p></div>
+  } @else {
+    <!-- Summary Cards -->
+    @if (analysis()) {
+      <div class="summary-cards">
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <mat-icon>shopping_cart</mat-icon>
+            <div>
+              <span class="value">{{ analysis()!.totalSpending | convertCurrency }}</span>
+              <span class="label">Total Spending</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <mat-icon>calendar_today</mat-icon>
+            <div>
+              <span class="value">{{ analysis()!.averageDaily | convertCurrency }}</span>
+              <span class="label">Daily Average</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <mat-icon>category</mat-icon>
+            <div>
+              <span class="value">{{ analysis()!.topCategory || 'N/A' }}</span>
+              <span class="label">Top Category</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <mat-icon>receipt_long</mat-icon>
+            <div>
+              <span class="value">{{ analysis()!.transactionCount }}</span>
+              <span class="label">Transactions</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+
+    <!-- Alerts -->
+    @if (alerts().length > 0) {
+      <mat-card class="alerts-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>notification_important</mat-icon>
+            Budget Alerts
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @for (alert of alerts(); track $index) {
+            <div class="alert-item">
+              <mat-icon>warning</mat-icon>
+              <span>{{ alert.message }}</span>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <div class="charts-grid">
+      <!-- Spending by Category -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Spending by Category</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (categoryChartData().labels && categoryChartData().labels!.length > 0) {
+            <div class="chart-container">
+              <canvas baseChart
+                [data]="categoryChartData()"
+                [options]="pieChartOptions"
+                type="doughnut">
+              </canvas>
+            </div>
+          } @else {
+            <div class="empty-chart">
+              <mat-icon>pie_chart</mat-icon>
+              <p>No spending data available</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Spending Trend -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Monthly Trend</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (trendChartData().labels && trendChartData().labels!.length > 0) {
+            <div class="chart-container">
+              <canvas baseChart
+                [data]="trendChartData()"
+                [options]="lineChartOptions"
+                type="line">
+              </canvas>
+            </div>
+          } @else {
+            <div class="empty-chart">
+              <mat-icon>show_chart</mat-icon>
+              <p>Not enough data for trend analysis</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Category Breakdown -->
+    @if (analysis()?.byCategory) {
+      <mat-card class="breakdown-card">
+        <mat-card-header>
+          <mat-card-title>Category Breakdown</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="category-list">
+            @for (cat of analysis()!.byCategory | keyvalue; track cat.key) {
+              <div class="category-item">
+                <div class="category-header">
+                  <span class="name">{{ cat.key }}</span>
+                  <span class="amount">{{ cat.value | convertCurrency }}</span>
+                </div>
+                <mat-progress-bar mode="determinate" [value]="getCategoryPercentage(cat.key)"></mat-progress-bar>
+                <span class="percentage">{{ getCategoryPercentage(cat.key) | number:'1.0-1' }}%</span>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Smart Insights -->
+    <mat-card class="insights-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>lightbulb</mat-icon>
+          Smart Insights
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (insights().length > 0) {
+          <div class="insights-list">
+            @for (insight of insights(); track $index) {
+              <div class="insight-item" [class]="getInsightClass(insight.type)">
+                <mat-icon>{{ getInsightIcon(insight.type) }}</mat-icon>
+                <span>{{ currencyService.formatInsightMessage(insight.message, insight.amounts) }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-insights">
+            <p>Add more transactions to get personalized financial insights</p>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

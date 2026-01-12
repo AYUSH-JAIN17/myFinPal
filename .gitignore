@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+frontend/dist/
+frontend/.angular/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Data (keep folder structure, ignore actual data)
+data/*.json
+!data/.gitkeep
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# MCP (excluded for now)
+src/mcp/
+.vscode/mcp.json
