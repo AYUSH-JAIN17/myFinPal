@@ -19,6 +19,7 @@ Thumbs.db
 
 # Data (keep folder structure, ignore actual data)
 data/*.json
+data/users/
 !data/.gitkeep
 
 # IDE
@@ -26,6 +27,5 @@ data/*.json
 *.swp
 *.swo
 
-# MCP (excluded for now)
-src/mcp/
+# VS Code MCP config (user-specific)
 .vscode/mcp.json
